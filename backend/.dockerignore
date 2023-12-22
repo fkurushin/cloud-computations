@@ -2,3 +2,4 @@ venv
 vosk-model-small-ru-0.22
 .idea
 vosk-model-ru-0.42
+Makefile

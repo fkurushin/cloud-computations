@@ -1,4 +1,3 @@
-from fastapi import FastAPI
 from vosk import Model, KaldiRecognizer
 from fastapi import FastAPI, UploadFile, File
 import os
@@ -9,8 +8,9 @@ from contextlib import asynccontextmanager
 def load_all_models():
     global model
     global rec
-
-    model = Model("/Users/fedorkurusin/Documents/cloud-computations/backend/vosk-model-small-ru-0.22/am/final.mdl")
+    model = Model(lang="ru")
+    # model = Model("/Users/fedorkurusin/Documents/cloud-computations/backend/vosk-model-ru-0.42")
+    # model = Model("/Users/fedorkurusin/Documents/cloud-computations/backend/vosk-model-small-ru-0.22")
     rec = KaldiRecognizer(model, 16000)
 
 
@@ -19,15 +19,15 @@ def clear_all_models():
 
 
 @asynccontextmanager
-async def lifespan():
+async def lifespan(app: FastAPI):
     load_all_models()
     yield
     clear_all_models()
 
 
 app = FastAPI(
-    title="",
-    description="",
+    title="VOSK SERVER",
+    description="VOSK SERVER FOR AUDIO TRANSCRIPTION APPLICATION",
     lifespan=lifespan)
 
 
@@ -56,4 +56,6 @@ async def recognize(audio_file: UploadFile = File(...)):
         buffer.write(await audio_file.read())
         transcription = recognize_speech(audio_file_path)
         os.remove(audio_file_path)
-        return {"transcription": transcription}
+        return {
+            "transcription": transcription
+        }
