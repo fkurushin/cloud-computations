@@ -1,7 +1,7 @@
 all:
-    	echo "Running back-end"
-   	run-back
-    	echo "Running front-end"	
+	docker build -f backend/Dockerfile -t backend .
+	docker run -p 8000:8000 backend
+
 build-back:
 	docker build -f backend/Dockerfile -t backend .
 
