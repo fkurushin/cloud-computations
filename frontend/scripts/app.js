@@ -25,7 +25,7 @@ if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         .then((stream) => {
             const mediaRecorder = new MediaRecorder(stream);
             
-            visualize(stream);
+            // visualize(stream);
             
             record.onclick = () => {
                 mediaRecorder.start();
@@ -51,29 +51,47 @@ if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
             
             mediaRecorder.onstop = (e) => {
             console.log("recorder stopped");
-            
+            console.log("recorder stopped");
+
             const clipName = prompt("Enter a name for your sound clip");
-            
+
             const clipContainer = document.createElement("article");
             const clipLabel = document.createElement("p");
             const audio = document.createElement("audio");
             const deleteButton = document.createElement("button");
-            
+
             clipContainer.classList.add("clip");
             audio.setAttribute("controls", "");
             deleteButton.innerHTML = "Delete";
             clipLabel.innerHTML = clipName;
-            
+
             clipContainer.appendChild(audio);
             clipContainer.appendChild(clipLabel);
             clipContainer.appendChild(deleteButton);
             soundClips.appendChild(clipContainer);
+
+            // https://developer.mozilla.org/en-US/docs/Web/API/MediaStream_Recording_API/Using_the_MediaStream_Recording_API#basic_app_setup
             
-            const blob = new Blob(chunks, { type: "audio/ogg; codecs=opus" });
+            const blob = new Blob(chunks, { type: mediaRecorder.mimeType });
+            
+            const formData = new FormData();
+            const blob_ = new Blob(chunks, { type : 'audio/wav' });
             chunks = [];
+            formData.append('file', blob_, 'test.wav');
+
+            fetch('http://localhost:8080/recognize', {
+                method: 'POST',
+                body: formData,
+                redirect: 'follow'
+            }).then(response => {
+                console.log(response);
+            }).catch(error => {
+                console.log(error);
+            });
+            
             const audioURL = window.URL.createObjectURL(blob);
             audio.src = audioURL;
-            
+
             deleteButton.onclick = (e) => {
                 let evtTgt = e.target;
                 evtTgt.parentNode.parentNode.removeChild(evtTgt.parentNode);
@@ -91,3 +109,10 @@ if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
     console.log("getUserMEdia not supported on your browser!");
 }
   
+
+
+// i wrote js frontend and python backend, when i send request to a back i ve got error:
+
+// [Error] Preflight response is not successful. Status code: 405
+// [Error] Fetch API cannot load http://localhost:8080/recognize due to access control checks.
+// [Error] Failed to load resource: Preflight response is not successful. Status code: 405 (recognize, line 0)

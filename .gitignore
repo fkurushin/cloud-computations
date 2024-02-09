@@ -2,3 +2,4 @@ backend/venv
 backend/vosk-model-small-ru-0.22
 backend/.idea
 backend/vosk-model-ru-0.42
+backend_v2/model
