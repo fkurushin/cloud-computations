@@ -1,0 +1,52 @@
+FROM debian:11 AS builder
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        g++ \
+        make \
+        automake \
+        autoconf \
+        bzip2 \
+        unzip \
+        wget \
+        sox \
+        libtool \
+        git \
+        subversion \
+        python2.7 \
+        python3 \
+        zlib1g-dev \
+        ca-certificates \
+        gfortran \
+        patch \
+        ffmpeg \
+	vim && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN git clone https://github.com/kaldi-asr/kaldi /opt/kaldi
+
+WORKDIR /opt/kaldi/tools 
+RUN make && \
+    find -name *.o -delete
+
+WORKDIR /opt/kaldi/src
+RUN ./configure && \ 
+	sed -i "s/-g /-O3 /g" /opt/kaldi/src/opt/kaldi.mk
+
+WORKDIR /opt/kaldi/src
+RUN make -j $(nproc) depend && \
+    make -j $(nproc)
+
+FROM debian:11
+COPY --from=builder /opt/kaldi/src/online2bin/online2-tcp-nnet3-decode-faster /usr/bin
+
+WORKDIR /usr/lib/x86_64-linux-gnu
+COPY --from=builder /opt/kaldi/tools/openfst/lib/libfst.so* .
+
+WORKDIR /model
+
+COPY backend_v2/model .
+
+ENTRYPOINT ["online2-tcp-nnet3-decode-faster","--read-timeout=-1","--samp-freq=8000","--frames-per-chunk=20",\
+"--extra-left-context-initial=0","--frame-subsampling-factor=3","--config=/model/model/conf/online.conf","--min-active=200","--max-active=7000",\
+"--beam=15","--lattice-beam=8","--acoustic-scale=1.0","--port-num=5050","/model/model/final.mdl","/model/graph/HCLG.fst","/model/graph/words.txt"]
