@@ -4,3 +4,5 @@ backend/.idea
 backend/vosk-model-ru-0.42
 backend_v2/model
 backend_v2/venv
+__pycache__
+venv

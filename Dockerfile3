@@ -26,15 +26,12 @@ RUN apt-get update && \
 RUN git clone https://github.com/kaldi-asr/kaldi /opt/kaldi
 
 WORKDIR /opt/kaldi/tools 
-RUN make && \
-    find -name *.o -delete
+RUN ./extras/install_openblas.sh && \
+    make -j $(nproc)
 
 WORKDIR /opt/kaldi/src
-RUN ./configure && \ 
-	sed -i "s/-g /-O3 /g" /opt/kaldi/src/opt/kaldi.mk
-
-WORKDIR /opt/kaldi/src
-RUN make -j $(nproc) depend && \
+RUN ./configure --shared --mathlib=OPENBLAS --use-cuda=no && \
+    make -j $(nproc) depend && \
     make -j $(nproc)
 
 FROM debian:11
@@ -42,10 +39,14 @@ COPY --from=builder /opt/kaldi/src/online2bin/online2-tcp-nnet3-decode-faster /u
 
 WORKDIR /usr/lib/x86_64-linux-gnu
 COPY --from=builder /opt/kaldi/tools/openfst/lib/libfst.so* .
+COPY --from=builder /opt/kaldi/src/lib/*.so .
+
 
 WORKDIR /model
 
 COPY backend_v2/model .
+
+EXPOSE 5050
 
 ENTRYPOINT ["online2-tcp-nnet3-decode-faster","--read-timeout=-1","--samp-freq=8000","--frames-per-chunk=20",\
 "--extra-left-context-initial=0","--frame-subsampling-factor=3","--config=/model/model/conf/online.conf","--min-active=200","--max-active=7000",\
